@@ -1,0 +1,188 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String   @id @default(uuid())
+  username          String   @unique
+  email             String   @unique
+  passwordHash      String
+  name              String
+  role              Role
+  companyName       String
+  rating            Float    @default(3.5)
+  completedTrips    Int      @default(0)
+  status            UserStatus @default(ACTIVE)
+  preferences       Json     // Store UserPreferences as JSON
+  avatarUrl         String?
+  certifications    String[] // Array of certifications
+  
+  // Relations
+  cargoOffers       CargoOffer[]
+  vehicles          Vehicle[]
+  alerts            Alert[]
+  blockchainEvents  BlockchainEvent[]
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([username])
+  @@index([email])
+  @@index([role])
+}
+
+enum Role {
+  Admin
+  Shipper
+  Carrier
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  PENDING_APPROVAL
+}
+
+model CargoOffer {
+  id              String   @id @default(uuid())
+  origin          String
+  destination     String
+  cargoType       String
+  weightKg        Float
+  volumeM3        Float
+  pickupDate      DateTime
+  deliveryDate    DateTime
+  status          CargoStatus
+  
+  // Relations
+  shipperId       String
+  shipper         User     @relation(fields: [shipperId], references: [id], onDelete: Cascade)
+  shipments       Shipment[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([shipperId])
+  @@index([status])
+  @@index([pickupDate])
+}
+
+enum CargoStatus {
+  PENDING
+  MATCHED
+  IN_TRANSIT
+  DELIVERED
+  CONSOLIDATING
+}
+
+model Vehicle {
+  id              String   @id @default(uuid())
+  type            VehicleType
+  capacityKg      Float
+  capacityM3      Float
+  currentLocation String
+  availability    VehicleAvailability
+  driverName      String?
+  
+  // Relations
+  carrierId       String
+  carrier         User     @relation(fields: [carrierId], references: [id], onDelete: Cascade)
+  shipments       Shipment[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([carrierId])
+  @@index([availability])
+}
+
+enum VehicleType {
+  TRUCK_LTL
+  TRUCK_FTL
+  VAN
+  REFRIGERATED_TRUCK
+}
+
+enum VehicleAvailability {
+  AVAILABLE
+  ON_TRIP
+  MAINTENANCE
+}
+
+model Shipment {
+  id                String   @id @default(uuid())
+  currentLocation   String
+  status            ShipmentStatus
+  estimatedDelivery DateTime
+  realTimeData      Json?    // Store ShipmentRealTimeData as JSON
+  
+  // Relations
+  cargoId           String
+  cargo             CargoOffer @relation(fields: [cargoId], references: [id], onDelete: Cascade)
+  vehicleId         String
+  vehicle           Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  alerts            Alert[]
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([cargoId])
+  @@index([vehicleId])
+  @@index([status])
+}
+
+enum ShipmentStatus {
+  IN_TRANSIT
+  DELAYED
+  DELIVERED
+  ISSUE_REPORTED
+}
+
+model Alert {
+  id                String   @id @default(uuid())
+  timestamp         DateTime @default(now())
+  message           String
+  severity          AlertSeverity
+  isRead            Boolean  @default(false)
+  
+  // Relations
+  relatedShipmentId String?
+  relatedShipment   Shipment? @relation(fields: [relatedShipmentId], references: [id], onDelete: SetNull)
+  recipientId       String?
+  recipient         User?    @relation(fields: [recipientId], references: [id], onDelete: SetNull)
+  
+  createdAt         DateTime @default(now())
+  
+  @@index([recipientId])
+  @@index([severity])
+  @@index([isRead])
+}
+
+enum AlertSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+model BlockchainEvent {
+  id              String   @id @default(uuid())
+  timestamp       DateTime @default(now())
+  eventType       String
+  details         Json
+  relatedEntityId String?
+  
+  // Relations
+  actorId         String?
+  actor           User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  
+  @@index([eventType])
+  @@index([timestamp])
+}
