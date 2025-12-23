@@ -2,15 +2,16 @@
 <img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
 
-# SmartAICargo v4
+# Booster 1.0
 
 > Plataforma de logística con React Query, lazy loading y optimizaciones de performance
 
-SmartAICargo v4 lleva la gestión logística al siguiente nivel con **React Query** para manejo profesional de estado asíncrono, **code splitting** para mejor performance, y **mejoras significativas de accesibilidad**.
+Booster 1.0 lleva la gestión logística al siguiente nivel con **React Query** para manejo profesional de estado asíncrono, **code splitting** para mejor performance, y **mejoras significativas de accesibilidad**.
 
-## ✨ Novedades en v4
+## ✨ Novedades en Booster 1.0
 
 ### 🎯 React Query Integration
+
 - ✅ Cache automático inteligente
 - ✅ Sincronización en segundo plano
 - ✅ Optimistic updates
@@ -18,17 +19,20 @@ SmartAICargo v4 lleva la gestión logística al siguiente nivel con **React Quer
 - ✅ Menos boilerplate (10 líneas → 3 líneas)
 
 ### ⚡ Performance
+
 - ✅ Lazy loading con React.lazy en todas las páginas
 - ✅ Code splitting automático
 - ✅ Componentes memoizados (DashboardCard, Sidebar)
 - ✅ Skeleton loaders para mejor UX
 
 ### 🧪 Testing Mejorado
+
 - ✅ Tests de hooks personalizados
 - ✅ Tests de componentes UI
 - ✅ Coverage >75% (objetivo)
 
 ### ♿ Accesibilidad
+
 - ✅ ARIA labels mejorados
 - ✅ Mejor navegación por teclado
 - ✅ Roles ARIA apropiados
@@ -43,35 +47,40 @@ SmartAICargo v4 lleva la gestión logística al siguiente nivel con **React Quer
 ### Instalación
 
 1. **Navegue al proyecto**
+
 ```bash
-cd smartaicargo-v4
+cd booster
 ```
 
-2. **Instale las dependencias**
+1. **Instale las dependencias**
+
 ```bash
 npm install
 ```
 
-3. **Configure las variables de entorno**
+1. **Configure las variables de entorno**
 
 Copie `.env.example` a `.env.local` y configure sus API keys:
+
 ```bash
 VITE_GEMINI_API_KEY=your_actual_gemini_api_key_here
 VITE_GOOGLE_MAPS_API_KEY=your_actual_google_maps_api_key_here
 ```
 
-4. **Ejecute la aplicación**
+1. **Ejecute la aplicación**
+
 ```bash
 npm run dev
 ```
 
-La aplicación estará disponible en: `http://localhost:5173`
+La aplicación estará disponible en: `http://localhost:3000`
 
 ## 🎯 Nuevas Funcionalidades
 
 ### React Query Hooks
 
 #### Queries
+
 ```typescript
 import { useCargoOffers } from './hooks/queries/useCargoOffers';
 
@@ -79,6 +88,7 @@ const { data, isLoading, error } = useCargoOffers();
 ```
 
 #### Mutations
+
 ```typescript
 import { useCreateCargoOffer } from './hooks/queries/useCargoOffers';
 
@@ -87,6 +97,7 @@ mutation.mutate(newOffer);
 ```
 
 #### Optimistic Updates
+
 ```typescript
 const { mutate } = useUpdateCargoOffers();
 // Actualiza UI inmediatamente, rollback automático en error
@@ -96,6 +107,7 @@ mutate(updatedOffers);
 ### Code Splitting
 
 Todas las páginas se cargan bajo demanda:
+
 ```typescript
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 ```
@@ -103,6 +115,7 @@ const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 ### Skeleton Loaders
 
 Experiencia de carga mejorada:
+
 ```typescript
 <Suspense fallback={<DashboardSkeleton />}>
   <DashboardPage />
@@ -125,7 +138,7 @@ Experiencia de carga mejorada:
 ## 📁 Nueva Estructura
 
 ```
-smartaicargo-v4/
+booster-1.0/
 ├── hooks/
 │   ├── queries/
 │   │   ├── useCargoOffers.ts     [NEW]
@@ -149,21 +162,25 @@ smartaicargo-v4/
 ## 🧪 Testing
 
 ### Ejecutar todos los tests
+
 ```bash
 npm test
 ```
 
 ### Tests con UI interactiva
+
 ```bash
 npm run test:ui
 ```
 
 ### Coverage report
+
 ```bash
 npm run test:coverage
 ```
 
-### Nuevos tests en v4
+### Nuevos tests en Booster 1.0
+
 - ✅ `tests/hooks/useCargoOffers.test.ts`
 - ✅ `tests/integration/AuthFlow.test.tsx` (próximamente)
 - ✅ `tests/components/DashboardCard.test.tsx` (próximamente)
@@ -179,7 +196,8 @@ npm run test:coverage
 
 ## 🎨 Ejemplos de Uso
 
-### Antes (v3)
+### Antes (Legacy)
+
 ```typescript
 const [data, setData] = useState([]);
 const [loading, setLoading] = useState(true);
@@ -194,12 +212,14 @@ useEffect(() => {
 }, []);
 ```
 
-### Después (v4)
+### Después (Booster)
+
 ```typescript
 const { data, isLoading } = useCargoOffers();
 ```
 
 **Beneficios**:
+
 - 70% menos código
 - Cache automático
 - Revalidación en background
@@ -219,6 +239,7 @@ npm run test:coverage # Coverage report
 ## 🎯 React Query DevTools
 
 En desarrollo, accede a las DevTools en la esquina inferior derecha:
+
 - Ver cache de queries
 - Invalidar queries manualmente
 - Inspeccionar estados de loading
@@ -227,42 +248,47 @@ En desarrollo, accede a las DevTools en la esquina inferior derecha:
 ## 📚 Documentación
 
 - [README.md](./README.md) - Este archivo
-- [ARCHITECTURE.md](../v3/docs/ARCHITECTURE.md) - Arquitectura (actualizar para v4)
+- [ARCHITECTURE.md](../v3/docs/ARCHITECTURE.md) - Arquitectura (actualizar para Booster)
 - [API_REFERENCE.md](../v3/docs/API_REFERENCE.md) - Referencia API
 - [HOOKS_GUIDE.md](./docs/HOOKS_GUIDE.md) - Guía de hooks (próximamente)
 
 ## ⚠️ Troubleshooting
 
 ### Error: "Cannot find module '@tanstack/react-query'"
+
 **Solución**: Ejecute `npm install`
 
 ### DevTools no aparecen
+
 **Solución**: Solo están disponibles en modo desarrollo (`npm run dev`)
 
 ### Cache no se invalida
+
 **Solución**: Use `queryClient.invalidateQueries()` o verifique los query keys
 
 ## 🔄 Migración desde v3
 
 ### 1. Reemplaza useState + useEffect con hooks
+
 ```typescript
-// v3
+// Legacy
 const [offers, setOffers] = useState([]);
 useEffect(() => { /* fetch */ }, []);
 
-// v4
+// Booster
 const { data: offers } = useCargoOffers();
 ```
 
 ### 2. Usa mutations para operaciones de escritura
+
 ```typescript
-// v3
+// Legacy
 const handleCreate = async () => {
   await apiService.create(data);
   refetch();
 };
 
-// v4
+// Booster
 const { mutate } = useCreateCargoOffer();
 const handleCreate = () => mutate(data);
 ```
@@ -288,5 +314,3 @@ Este proyecto es un demo educativo.
 ---
 
 **Desarrollado con ❤️ y ⚡ React Query**
-
-View en AI Studio: https://ai.studio/apps/drive/1FM0Pnz-odI7GkfQwUO2Rux499ry9M5Bx
