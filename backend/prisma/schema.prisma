@@ -130,6 +130,7 @@ model Shipment {
   vehicleId         String
   vehicle           Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
   alerts            Alert[]
+  sensorReadings    SensorReading[]
   
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -184,5 +185,32 @@ model BlockchainEvent {
   actor           User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
   
   @@index([eventType])
+  @@index([timestamp])
+}
+
+// IoT Sensor Readings
+enum SensorType {
+  TEMPERATURE
+  HUMIDITY
+  LOCATION
+  VIBRATION
+  DOOR_STATUS
+}
+
+model SensorReading {
+  id          String     @id @default(uuid())
+  timestamp   DateTime   @default(now())
+  shipmentId  String
+  shipment    Shipment   @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  sensorType  SensorType
+  value       Float
+  unit        String
+  latitude    Float?
+  longitude   Float?
+  deviceId    String?    // Device identifier (e.g., mobile phone ID, IoT sensor ID)
+  isSimulated Boolean    @default(false)
+  
+  @@index([shipmentId])
+  @@index([sensorType])
   @@index([timestamp])
 }

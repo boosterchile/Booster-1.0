@@ -7,6 +7,7 @@ import cargoRoutes from './routes/cargo.routes.js';
 import vehicleRoutes from './routes/vehicle.routes.js';
 import shipmentRoutes from './routes/shipment.routes.js';
 import alertRoutes from './routes/alert.routes.js';
+import iotRoutes from './routes/iot.routes.js';
 
 const app = express();
 
@@ -30,6 +31,7 @@ app.use('/api/cargo', cargoRoutes);
 app.use('/api/vehicles', vehicleRoutes);
 app.use('/api/shipments', shipmentRoutes);
 app.use('/api/alerts', alertRoutes);
+app.use('/api/iot', iotRoutes);
 
 // 404 handler
 app.use((_req, res) => {

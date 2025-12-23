@@ -9,6 +9,7 @@ export const GEMINI_IMAGE_MODEL = "imagen-3.0-generate-002";
 // Environment variables with validation
 export const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "";
 export const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
 
 // Startup validation for critical env vars
 if (!GEMINI_API_KEY) {

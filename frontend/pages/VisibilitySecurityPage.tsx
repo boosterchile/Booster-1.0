@@ -4,42 +4,44 @@ import { Shipment, ShipmentRealTimeData, GeminiRiskAnalysis, AlertSeverity } fro
 import { MapPinIcon, ThermometerIcon, AlertTriangleIcon, ShieldIcon, LockIcon, ZapIcon } from '../components/icons';
 import { geminiService } from '../services/geminiService';
 import { apiService } from '../services/apiService';
-import { DEFAULT_ERROR_MESSAGE, GOOGLE_MAPS_API_KEY } from '../constants'; 
+import { DEFAULT_ERROR_MESSAGE, GOOGLE_MAPS_API_KEY, API_BASE_URL } from '../constants';
 import GoogleMapComponent from '../components/GoogleMapComponent';
+import IoTSensorPanel from '../components/IoTSensorPanel';
+import { useAuth } from '../contexts/AuthContext';
 
 const initialMockShipments: Shipment[] = [
-  { 
-    id: 'SMRTCGO-001', 
-    cargoId: 'CGO001', 
-    vehicleId: 'VEH001', 
-    currentLocation: 'Ruta 68, km 50', 
-    status: 'In Transit', 
+  {
+    id: 'SMRTCGO-001',
+    cargoId: 'CGO001',
+    vehicleId: 'VEH001',
+    currentLocation: 'Ruta 68, km 50',
+    status: 'In Transit',
     estimatedDelivery: '2024-08-01 18:00',
     realTimeData: { latitude: -33.3000, longitude: -70.9000, speedKmh: 85, doorOpen: false }
   },
-  { 
-    id: 'SMRTCGO-002', 
-    cargoId: 'CGO002', 
-    vehicleId: 'VEH002', 
-    currentLocation: 'Angostura', 
-    status: 'In Transit', 
+  {
+    id: 'SMRTCGO-002',
+    cargoId: 'CGO002',
+    vehicleId: 'VEH002',
+    currentLocation: 'Angostura',
+    status: 'In Transit',
     estimatedDelivery: '2024-08-03 15:00',
     realTimeData: { latitude: -33.8000, longitude: -70.7000, speedKmh: 70, temperatureCelsius: 2, humidityPercent: 60, doorOpen: false, vibrationLevel: 'Low' }
   },
-  { 
-    id: 'SMRTCGO-003', 
-    cargoId: 'CGO003', 
-    vehicleId: 'VEH003', 
-    currentLocation: 'Baquedano', 
-    status: 'Issue Reported', 
+  {
+    id: 'SMRTCGO-003',
+    cargoId: 'CGO003',
+    vehicleId: 'VEH003',
+    currentLocation: 'Baquedano',
+    status: 'Issue Reported',
     estimatedDelivery: '2024-08-02 12:00',
     realTimeData: { latitude: -23.3000, longitude: -69.8000, speedKmh: 0, doorOpen: true, vibrationLevel: 'High' }
   },
 ];
 
 const DEFAULT_MAP_CENTER = { lat: -33.45694, lng: -70.64827 };
-const DEFAULT_MAP_ZOOM = 7; 
-const SHIPMENT_MAP_ZOOM = 12; 
+const DEFAULT_MAP_ZOOM = 7;
+const SHIPMENT_MAP_ZOOM = 12;
 const PLACEHOLDER_API_KEY = "YOUR_GOOGLE_MAPS_API_KEY_PLACEHOLDER";
 
 
@@ -51,6 +53,9 @@ const VisibilitySecurityPage: React.FC = () => {
   const [riskAnalysis, setRiskAnalysis] = useState<GeminiRiskAnalysis | null>(null);
   const [isLoadingRisk, setIsLoadingRisk] = useState(false);
   const [errorRisk, setErrorRisk] = useState<string | null>(null);
+  const [iotReadings, setIotReadings] = useState<Record<string, any>>({});
+  const [isSimulating, setIsSimulating] = useState(false);
+  const { token } = useAuth();
 
   useEffect(() => {
     const loadData = async () => {
@@ -76,31 +81,81 @@ const VisibilitySecurityPage: React.FC = () => {
   }, []);
 
   const updateShipmentStatus = async (shipmentId: string, newStatus: Shipment['status'], newLocation?: string) => {
-    const newShipments = shipmentsList.map(s => 
-      s.id === shipmentId 
-      ? { ...s, status: newStatus, currentLocation: newLocation || s.currentLocation } 
-      : s
+    const newShipments = shipmentsList.map(s =>
+      s.id === shipmentId
+        ? { ...s, status: newStatus, currentLocation: newLocation || s.currentLocation }
+        : s
     );
     setShipmentsList(newShipments);
     await apiService.updateData('shipments', newShipments);
 
     if (newStatus === 'Issue Reported' || newStatus === 'Delivered') {
-        apiService.addBlockchainEvent({
-            eventType: newStatus === 'Issue Reported' ? 'SHIPMENT_ISSUE_REPORTED' : 'SHIPMENT_DELIVERED',
-            details: { shipmentId, status: newStatus, location: newLocation || selectedShipment?.currentLocation },
-            relatedEntityId: shipmentId,
-            actorId: 'iot_simulator' // Or system
-        });
+      apiService.addBlockchainEvent({
+        eventType: newStatus === 'Issue Reported' ? 'SHIPMENT_ISSUE_REPORTED' : 'SHIPMENT_DELIVERED',
+        details: { shipmentId, status: newStatus, location: newLocation || selectedShipment?.currentLocation },
+        relatedEntityId: shipmentId,
+        actorId: 'iot_simulator' // Or system
+      });
     }
     // If the selected shipment is the one being updated, refresh its view
     if (selectedShipment?.id === shipmentId) {
-        setSelectedShipment(prev => prev ? {...prev, status: newStatus, currentLocation: newLocation || prev.currentLocation} : null);
+      setSelectedShipment(prev => prev ? { ...prev, status: newStatus, currentLocation: newLocation || prev.currentLocation } : null);
     }
   };
 
 
-  const handleSelectShipment = (shipmentId: string) => {
-    setSelectedShipment(shipmentsList.find(s => s.id === shipmentId) || null);
+  const handleSelectShipment = async (shipmentId: string) => {
+    const selected = shipmentsList.find(s => s.id === shipmentId) || null;
+    setSelectedShipment(selected);
+    if (selected && token) {
+      // Fetch IoT readings for the selected shipment
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/iot/readings/${shipmentId}/latest`, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        const data = await response.json();
+        if (data.success) {
+          setIotReadings(data.data);
+        }
+      } catch (error) {
+        console.error('Error fetching IoT readings:', error);
+      }
+    }
+  };
+
+  const handleSimulateIoT = async () => {
+    if (!selectedShipment || !token) return;
+    setIsSimulating(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/iot/simulate/${selectedShipment.id}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      const data = await response.json();
+      if (data.success) {
+        // Refresh the IoT readings
+        const readingsResponse = await fetch(`${API_BASE_URL}/api/iot/readings/${selectedShipment.id}/latest`, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        const readingsData = await readingsResponse.json();
+        if (readingsData.success) {
+          setIotReadings(readingsData.data);
+        }
+        // Also refresh shipment data
+        const shipmentResponse = await fetch(`${API_BASE_URL}/api/shipments/${selectedShipment.id}`, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        const shipmentData = await shipmentResponse.json();
+        if (shipmentData.success && shipmentData.data) {
+          setSelectedShipment(shipmentData.data);
+          setShipmentsList(prev => prev.map(s => s.id === shipmentData.data.id ? shipmentData.data : s));
+        }
+      }
+    } catch (error) {
+      console.error('Error simulating IoT:', error);
+    } finally {
+      setIsSimulating(false);
+    }
   };
 
   const handleAnalyzeRisk = useCallback(async () => {
@@ -115,7 +170,7 @@ const VisibilitySecurityPage: React.FC = () => {
     try {
       const prompt = `Analiza el siguiente escenario de riesgo en transporte de carga y proporciona una evaluación. Escenario: "${riskScenario}". Formato JSON: {"risk_level": "Low" | "Medium" | "High", "potential_risks": ["...", "..."], "mitigation_suggestions": ["...", "..."]}`;
       const result = await geminiService.generateText(prompt, { responseMimeType: "application/json" });
-      
+
       const parsedData = geminiService.parseJsonFromGeminiResponse<GeminiRiskAnalysis>(result);
       if (parsedData) {
         setRiskAnalysis(parsedData);
@@ -130,20 +185,20 @@ const VisibilitySecurityPage: React.FC = () => {
     }
   }, [riskScenario]);
 
-  const cardBaseStyle = "bg-[#1a1f25] border border-[#40474f] shadow-lg rounded-xl p-4 sm:p-6 text-white"; 
+  const cardBaseStyle = "bg-[#1a1f25] border border-[#40474f] shadow-lg rounded-xl p-4 sm:p-6 text-white";
   const inputStyle = "mt-1 block w-full px-3 py-2 border border-[#40474f] rounded-md shadow-sm focus:outline-none focus:ring-[#3f7fbf] focus:border-[#3f7fbf] sm:text-sm bg-[#1f2328] text-white placeholder-[#a2abb3]/70";
   const labelStyle = "block text-sm font-medium text-[#a2abb3]";
-  const buttonPrimaryStyle = "w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 px-4 rounded-xl shadow-md transition duration-150 disabled:opacity-60 flex items-center justify-center mobile-tap-target"; 
+  const buttonPrimaryStyle = "w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 px-4 rounded-xl shadow-md transition duration-150 disabled:opacity-60 flex items-center justify-center mobile-tap-target";
 
 
-  const mapCenter = selectedShipment?.realTimeData 
-    ? { lat: selectedShipment.realTimeData.latitude, lng: selectedShipment.realTimeData.longitude } 
+  const mapCenter = selectedShipment?.realTimeData
+    ? { lat: selectedShipment.realTimeData.latitude, lng: selectedShipment.realTimeData.longitude }
     : DEFAULT_MAP_CENTER;
-  
+
   const mapZoom = selectedShipment?.realTimeData ? SHIPMENT_MAP_ZOOM : DEFAULT_MAP_ZOOM;
-  
-  const markerPosition = selectedShipment?.realTimeData 
-    ? { lat: selectedShipment.realTimeData.latitude, lng: selectedShipment.realTimeData.longitude } 
+
+  const markerPosition = selectedShipment?.realTimeData
+    ? { lat: selectedShipment.realTimeData.latitude, lng: selectedShipment.realTimeData.longitude }
     : null;
 
   const isMapsApiConfigured = GOOGLE_MAPS_API_KEY && GOOGLE_MAPS_API_KEY !== PLACEHOLDER_API_KEY;
@@ -151,7 +206,7 @@ const VisibilitySecurityPage: React.FC = () => {
   if (isPageLoading) {
     return <div className="text-center p-10 text-white">Cargando datos de envíos...</div>;
   }
-  
+
   const renderMapOrPlaceholder = () => {
     if (!isMapsApiConfigured) {
       return (
@@ -173,11 +228,11 @@ const VisibilitySecurityPage: React.FC = () => {
       />
     );
   };
-  
+
   const renderDefaultMapState = () => {
-     if (!isMapsApiConfigured) {
+    if (!isMapsApiConfigured) {
       return (
-         <div className="bg-[#2c3035] rounded-xl flex flex-col items-center justify-center h-full text-center p-4">
+        <div className="bg-[#2c3035] rounded-xl flex flex-col items-center justify-center h-full text-center p-4">
           <MapPinIcon className="w-12 h-12 text-[#a2abb3]/50 mb-3" />
           <p className="text-[#a2abb3]/70 text-sm font-medium">Mapa No Disponible</p>
           <p className="text-[#a2abb3]/60 text-xs mt-1">Configure API Key para ver el mapa.</p>
@@ -228,7 +283,7 @@ const VisibilitySecurityPage: React.FC = () => {
                     <div className="bg-[#1f2328] p-3 rounded-xl border border-[#40474f] text-xs sm:text-sm">
                       <h4 className="font-medium text-white mb-1">Datos IoT:</h4>
                       <p>Velocidad: {selectedShipment.realTimeData.speedKmh} km/h</p>
-                      {selectedShipment.realTimeData.temperatureCelsius !== undefined && <p className="flex items-center"><ThermometerIcon className="h-4 w-4 mr-1 text-blue-400"/> Temp: {selectedShipment.realTimeData.temperatureCelsius}°C</p>}
+                      {selectedShipment.realTimeData.temperatureCelsius !== undefined && <p className="flex items-center"><ThermometerIcon className="h-4 w-4 mr-1 text-blue-400" /> Temp: {selectedShipment.realTimeData.temperatureCelsius}°C</p>}
                       {selectedShipment.realTimeData.humidityPercent !== undefined && <p>Humedad: {selectedShipment.realTimeData.humidityPercent}%</p>}
                       <p className={`${selectedShipment.realTimeData.doorOpen ? 'text-red-400 font-semibold' : 'text-green-400'}`}>
                         Puertas: {selectedShipment.realTimeData.doorOpen ? 'Abiertas (¡Alerta!)' : 'Cerradas'}
@@ -240,15 +295,25 @@ const VisibilitySecurityPage: React.FC = () => {
                 <div className="flex-grow h-64 sm:h-80 md:h-96 mb-3 sm:mb-4">
                   {renderMapOrPlaceholder()}
                 </div>
-                 <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-xl flex items-start sm:items-center text-xs sm:text-sm">
-                    <LockIcon className="h-5 w-5 sm:h-6 sm:w-6 mr-2 text-blue-400 flex-shrink-0 mt-0.5 sm:mt-0" />
-                    <p className="text-blue-300">Eventos clave del envío registrados en Blockchain para trazabilidad inmutable.</p>
+
+                {/* IoT Sensor Panel */}
+                <div className="mb-3 sm:mb-4">
+                  <IoTSensorPanel
+                    readings={iotReadings}
+                    onSimulate={handleSimulateIoT}
+                    isSimulating={isSimulating}
+                  />
+                </div>
+
+                <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-xl flex items-start sm:items-center text-xs sm:text-sm">
+                  <LockIcon className="h-5 w-5 sm:h-6 sm:w-6 mr-2 text-blue-400 flex-shrink-0 mt-0.5 sm:mt-0" />
+                  <p className="text-blue-300">Eventos clave del envío registrados en Blockchain para trazabilidad inmutable.</p>
                 </div>
               </>
             ) : (
-             <div className="flex-grow flex flex-col items-center justify-center text-center py-10">
+              <div className="flex-grow flex flex-col items-center justify-center text-center py-10">
                 <div className="w-full h-64 sm:h-80 md:h-96">
-                   {renderDefaultMapState()}
+                  {renderDefaultMapState()}
                 </div>
                 <p className="text-[#a2abb3]/80 text-sm sm:text-base mt-4">
                   {isMapsApiConfigured ? "Mapa de Chile. Seleccione un envío para ver los detalles y su ubicación." : "Seleccione un envío para ver detalles."}
@@ -280,38 +345,37 @@ const VisibilitySecurityPage: React.FC = () => {
           disabled={isLoadingRisk}
           className={buttonPrimaryStyle}
         >
-           {isLoadingRisk ? (
-              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-            ) : <ZapIcon className="h-5 w-5 mr-2"/> }
+          {isLoadingRisk ? (
+            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          ) : <ZapIcon className="h-5 w-5 mr-2" />}
           {isLoadingRisk ? 'Analizando...' : 'Analizar Riesgo con IA'}
         </button>
         {errorRisk && <p className="text-red-400 text-xs sm:text-sm mt-2 p-2 bg-red-500/10 border border-red-500/20 rounded-md">{errorRisk}</p>}
         {riskAnalysis && (
           <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-sm sm:text-base">
             <h3 className="text-base sm:text-lg font-semibold text-red-300 mb-1 sm:mb-2">Análisis de Riesgo:</h3>
-            <p><strong>Nivel de Riesgo:</strong> <span className={`font-bold ${
-                riskAnalysis.risk_level === 'High' ? 'text-red-400' :
+            <p><strong>Nivel de Riesgo:</strong> <span className={`font-bold ${riskAnalysis.risk_level === 'High' ? 'text-red-400' :
                 riskAnalysis.risk_level === 'Medium' ? 'text-yellow-400' : 'text-green-400'
-            }`}>{riskAnalysis.risk_level}</span></p>
-            
+              }`}>{riskAnalysis.risk_level}</span></p>
+
             {riskAnalysis.potential_risks && riskAnalysis.potential_risks.length > 0 && (
-                <>
-                    <h4 className="font-medium text-red-300 mt-2 sm:mt-3 mb-1">Riesgos Potenciales:</h4>
-                    <ul className="list-disc list-inside text-[#a2abb3] space-y-1">
-                    {riskAnalysis.potential_risks.map((item, index) => <li key={index}>{item}</li>)}
-                    </ul>
-                </>
+              <>
+                <h4 className="font-medium text-red-300 mt-2 sm:mt-3 mb-1">Riesgos Potenciales:</h4>
+                <ul className="list-disc list-inside text-[#a2abb3] space-y-1">
+                  {riskAnalysis.potential_risks.map((item, index) => <li key={index}>{item}</li>)}
+                </ul>
+              </>
             )}
             {riskAnalysis.mitigation_suggestions && riskAnalysis.mitigation_suggestions.length > 0 && (
-                 <>
-                    <h4 className="font-medium text-red-300 mt-2 sm:mt-3 mb-1">Sugerencias de Mitigación:</h4>
-                    <ul className="list-disc list-inside text-[#a2abb3] space-y-1">
-                    {riskAnalysis.mitigation_suggestions.map((item, index) => <li key={index}>{item}</li>)}
-                    </ul>
-                </>
+              <>
+                <h4 className="font-medium text-red-300 mt-2 sm:mt-3 mb-1">Sugerencias de Mitigación:</h4>
+                <ul className="list-disc list-inside text-[#a2abb3] space-y-1">
+                  {riskAnalysis.mitigation_suggestions.map((item, index) => <li key={index}>{item}</li>)}
+                </ul>
+              </>
             )}
           </div>
         )}
