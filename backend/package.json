@@ -1,7 +1,7 @@
 {
-    "name": "smartaicargo-backend",
+    "name": "booster-backend",
     "version": "1.0.0",
-    "description": "REST API backend for SmartAICargo logistics platform",
+    "description": "REST API backend for Booster logistics platform",
     "main": "dist/index.js",
     "type": "module",
     "scripts": {

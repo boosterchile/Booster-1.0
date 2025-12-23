@@ -3,7 +3,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { ReactNode } from 'react';
 
 /**
- * QueryClient configuration with optimized defaults for SmartAICargo
+ * QueryClient configuration with optimized defaults for Booster
  */
 const queryClient = new QueryClient({
     defaultOptions: {
@@ -32,7 +32,7 @@ export const QueryProvider = ({ children }: QueryProviderProps) => (
     <QueryClientProvider client={queryClient}>
         {children}
         {process.env.NODE_ENV === 'development' && (
-            <ReactQueryDevtools initialIsOpen={false} position="bottom-right" />
+            <ReactQueryDevtools initialIsOpen={false} position="bottom" />
         )}
     </QueryClientProvider>
 );
