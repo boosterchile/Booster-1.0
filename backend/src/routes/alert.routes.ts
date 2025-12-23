@@ -6,6 +6,7 @@ const router = Router();
 router.use(authenticate);
 
 router.get('/', alertController.getAll);
+router.get('/:id', alertController.getById);
 router.post('/', alertController.create);
 router.put('/:id/read', alertController.markAsRead);
 router.delete('/:id', alertController.delete);

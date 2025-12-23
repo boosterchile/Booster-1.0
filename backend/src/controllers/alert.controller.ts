@@ -14,6 +14,15 @@ export const alertController = {
         }
     },
 
+    async getById(req: AuthRequest, res: Response): Promise<void> {
+        try {
+            const alert = await alertService.getById(req.params.id);
+            res.status(200).json({ success: true, data: alert });
+        } catch (error) {
+            res.status(404).json({ success: false, message: error instanceof Error ? error.message : 'Not found' });
+        }
+    },
+
     async create(req: AuthRequest, res: Response): Promise<void> {
         try {
             const validatedData = createAlertSchema.parse(req.body);

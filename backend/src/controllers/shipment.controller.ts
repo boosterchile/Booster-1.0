@@ -50,4 +50,13 @@ export const shipmentController = {
             res.status(404).json({ success: false, message: error instanceof Error ? error.message : 'Not found' });
         }
     },
+
+    async delete(req: AuthRequest, res: Response): Promise<void> {
+        try {
+            const result = await shipmentService.delete(req.params.id);
+            res.status(200).json({ success: true, data: result });
+        } catch (error) {
+            res.status(400).json({ success: false, message: error instanceof Error ? error.message : 'Error' });
+        }
+    },
 };

@@ -10,5 +10,6 @@ router.get('/:id', shipmentController.getById);
 router.get('/:id/realtime', shipmentController.getRealTimeData);
 router.post('/', shipmentController.create);
 router.put('/:id', shipmentController.update);
+router.delete('/:id', shipmentController.delete);
 
 export default router;

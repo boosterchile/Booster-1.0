@@ -47,4 +47,9 @@ export const shipmentService = {
         if (!shipment) throw new Error('Shipment not found');
         return shipment;
     },
+
+    async delete(id: string) {
+        await prisma.shipment.delete({ where: { id } });
+        return { id };
+    },
 };

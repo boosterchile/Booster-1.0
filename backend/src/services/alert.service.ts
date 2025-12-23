@@ -13,6 +13,15 @@ export const alertService = {
         });
     },
 
+    async getById(id: string) {
+        const alert = await prisma.alert.findUnique({
+            where: { id },
+            include: { relatedShipment: true, recipient: true },
+        });
+        if (!alert) throw new Error('Alert not found');
+        return alert;
+    },
+
     async create(data: any) {
         return prisma.alert.create({
             data,
