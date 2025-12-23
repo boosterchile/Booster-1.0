@@ -11,6 +11,7 @@ import { APIProvider } from '@vis.gl/react-google-maps';
 import { GOOGLE_MAPS_API_KEY } from './constants';
 import ToastContainer from './components/ToastContainer';
 import { QueryProvider } from './providers/QueryProvider';
+import MapsErrorHandler from './components/MapsErrorHandler';
 
 // Lazy load all pages for code splitting
 const HomePage = lazy(() => import('./pages/HomePage'));
@@ -31,6 +32,7 @@ const App: React.FC = () => {
           <AuthProvider>
             <ToastProvider>
               <ToastContainer />
+              <MapsErrorHandler />
               <Suspense fallback={<LoadingSpinner />}>
                 <Routes>
                   {/* Public routes that don't use the main layout */}
