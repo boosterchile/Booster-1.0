@@ -19,7 +19,7 @@ app.use(express.urlencoded({ extended: true }));
 app.get('/health', (_req, res) => {
     res.status(200).json({
         success: true,
-        message: 'SmartAICargo API is running',
+        message: 'Booster API is running',
         timestamp: new Date().toISOString(),
     });
 });
@@ -46,7 +46,7 @@ app.use(errorHandler);
 const PORT = env.PORT || 3001;
 
 app.listen(PORT, () => {
-    console.log(`🚀 SmartAICargo API server running on port ${PORT}`);
+    console.log(`🚀 Booster API server running on port ${PORT}`);
     console.log(`📝 Environment: ${env.NODE_ENV}`);
     console.log(`🌐 CORS enabled for: ${env.CORS_ORIGIN}`);
     console.log(`\n📚 Available endpoints:`);
