@@ -10,6 +10,8 @@ const envSchema = z.object({
     PORT: z.string().transform(Number).default('3001'),
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
     CORS_ORIGIN: z.string().url().default('http://localhost:5173'),
+    GOOGLE_CLOUD_PROJECT_ID: z.string().optional(),
+    GOOGLE_APPLICATION_CREDENTIALS: z.string().optional(),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);

@@ -49,6 +49,9 @@ app.listen(PORT, () => {
     console.log(`🚀 Booster API server running on port ${PORT}`);
     console.log(`📝 Environment: ${env.NODE_ENV}`);
     console.log(`🌐 CORS enabled for: ${env.CORS_ORIGIN}`);
+    if (env.GOOGLE_CLOUD_PROJECT_ID) {
+        console.log(`☁️  Google Cloud Project: ${env.GOOGLE_CLOUD_PROJECT_ID}`);
+    }
     console.log(`\n📚 Available endpoints:`);
     console.log(`   GET  /health`);
     console.log(`   POST /api/auth/register`);
